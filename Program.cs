@@ -1,4 +1,10 @@
 
+using ClassLibary;
+using Microsoft.EntityFrameworkCore;
+using SUT23_Projekt___Avancerad_.NET.Data;
+using SUT23_Projekt___Avancerad_.NET.Services;
+using System.Text.Json.Serialization;
+
 namespace SUT23_Projekt___Avancerad_.NET
 {
     public class Program
@@ -13,6 +19,14 @@ namespace SUT23_Projekt___Avancerad_.NET
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddScoped<ICompany<Company>, CompanyRepo>();
+            builder.Services.AddScoped<IAppData<Appointment>, AppointmentRepo>();
+            builder.Services.AddScoped<ICustomer<Customer>, CustomerRepo>();
+            builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve);
+
+            //EF till SQL
+            builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Connection")));
+
 
             var app = builder.Build();
 
