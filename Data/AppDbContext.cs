@@ -10,109 +10,125 @@ namespace SUT23_Projekt___Avancerad_.NET.Data
 
         }
 
+        public DbSet<User> Users { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Company> Companies { get; set; }
-        public DbSet<ChangeHistory> ChangeHistorys { get; set; }
+        public DbSet<ChangeLog> ChangeLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>().HasData(
+                new User { Id = 1, Username = "admin", PasswordHash = "password123", Role = "Admin", IsActive = true },
+                new User { Id = 2, Username = "user1", PasswordHash = "hejhej456", Role = "User", IsActive = true },
+                new User { Id = 3, Username = "user2", PasswordHash = "user2", Role = "User", IsActive = true }
+            );
 
-            modelBuilder.Entity<Customer>().HasData(new Customer
-            {
-                CustomerID = 1,
-                CustomerName = "Göran Nilsson",
-                CustomerAddress = "AborreGatan 5",
-                CustomerEmail = "Göran@qlok.se",
-                CustomerPhone = "0701233214",
+            modelBuilder.Entity<Customer>().HasData(
+                new Customer
+                {
+                    CustomerId = 1,
+                    Email = "john.wall@hotmail.com",
+                    Phone = "+4634567890",
+                    FirstName = "John",
+                    LastName = "Wall",
+                    CreationDate = DateTime.UtcNow.AddDays(-10),
+                    UpdateDate = DateTime.UtcNow,
+                    UserId = 2
+                },
+                new Customer
+                {
+                    CustomerId = 2,
+                    Email = "mary.jane@hotmail.com",
+                    Phone = "+4698765432",
+                    FirstName = "Mary",
+                    LastName = "Jane",
+                    CreationDate = DateTime.UtcNow.AddDays(-8),
+                    UpdateDate = DateTime.UtcNow,
+                    UserId = 3
+                }
+            );
 
+            modelBuilder.Entity<Company>().HasData(
+                new Company
+                {
+                    CompanyId = 1,
+                    CompanyName = "Tech Solutions Inc.",
+                    CompanyEmail = "info@techsolutions.com",
+                    UserId = 1
+                },
+                new Company
+                {
+                    CompanyId = 2,
+                    CompanyName = "Innovative Designs LLC",
+                    CompanyEmail = "contact@innovativedesigns.com",
+                    UserId = 1
+                }
+            );
 
-            });
-            modelBuilder.Entity<Customer>().HasData(new Customer
-            {
-                CustomerID = 2,
-                CustomerName = "Astrid Johansson",
-                CustomerAddress = "Bruksvägen 45",
-                CustomerEmail = "Astrid@qlok.se",
-                CustomerPhone = "0723516101",
+            modelBuilder.Entity<Appointment>().HasData(
+                new Appointment
+                {
+                    AppointId = 1,
+                    StartingTime = DateTime.UtcNow.AddDays(5),
+                    AppointmentDurationMinutes = 60,
+                    CreationDate = DateTime.UtcNow.AddDays(-1),
+                    UpdateDate = DateTime.UtcNow,
+                    Title = "Consultation Meeting",
+                    Description = "Meeting to discuss project requirements.",
+                    CompanyId = 1,
+                    CustomerId = 1
+                },
+                new Appointment
+                {
+                    AppointId = 2,
+                    StartingTime = DateTime.UtcNow.AddDays(7),
+                    AppointmentDurationMinutes = 30,
+                    CreationDate = DateTime.UtcNow.AddDays(-2),
+                    UpdateDate = DateTime.UtcNow,
+                    Title = "Design Review",
+                    Description = "Review of the initial design drafts.",
+                    CompanyId = 2,
+                    CustomerId = 2
+                }
+            );
 
+            modelBuilder.Entity<ChangeLog>().HasData(
+                new ChangeLog
+                {
+                    Id = 1,
+                    AppointId = 1,
+                    ChangedAtDate = DateTime.UtcNow,
+                    Action = "Created",
+                    Details = "Appointment created for John Wall",
+                    CustomerId = 1,
+                    CompanyId = 1
+                },
+                new ChangeLog
+                {
+                    Id = 2,
+                    AppointId = 2,
+                    ChangedAtDate = DateTime.UtcNow,
+                    Action = "Created",
+                    Details = "Appointment created for Mary Jane",
+                    CustomerId = 2,
+                    CompanyId = 2
+                }
+            );
 
-            });
-            modelBuilder.Entity<Customer>().HasData(new Customer
-            {
-                CustomerID = 3,
-                CustomerName = "Anna Jacobsson",
-                CustomerAddress = "Hjälmvägen 1",
-                CustomerEmail = "Anna@qlok.se",
-                CustomerPhone = "0723112233",
+            modelBuilder.Entity<Appointment>()
+                .HasOne(a => a.Customer)
+                .WithMany(c => c.Appointments)
+                .HasForeignKey(a => a.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            });
-            modelBuilder.Entity<Customer>().HasData(new Customer
-            {
-                CustomerID = 4,
-                CustomerName = "Peo Jacobsson",
-                CustomerAddress = "Hjälmvägen 1",
-                CustomerEmail = "Peo@qlok.se",
-                CustomerPhone = "0723459469",
-
-            });
-
-
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
-            {
-                AppointmentID = 1,
-                AppointmentName = "Snabb besök",
-                AppointmentLength = 0.5,
-                AppointmentStart = new DateTime(2024, 12, 08, 10, 30, 0),
-                AppointmentEnd = new DateTime(2024, 12, 08, 11, 0, 0),
-                CustomerID = 1,
-                CompanyID = 1,
-
-            });
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
-            {
-                AppointmentID = 2,
-                AppointmentName = "Massage",
-                AppointmentLength = 1,
-                AppointmentStart = new DateTime(2024, 12, 2, 13, 0, 0),
-                AppointmentEnd = new DateTime(2024, 12, 2, 15, 0, 0),
-                CustomerID = 2,
-                CompanyID = 1,
-
-            });
-            modelBuilder.Entity<Appointment>().HasData(new Appointment
-            {
-                AppointmentID = 3,
-                AppointmentName = "Rehab besök",
-                AppointmentLength = 2,
-                AppointmentStart = new DateTime(2024, 12, 14, 4, 0, 0),
-                AppointmentEnd = new DateTime(2024, 12, 14, 5, 0, 0),
-                CustomerID = 2,
-                CompanyID = 1,
-
-            });
-
-
-
-            modelBuilder.Entity<Company>().HasData(new Company
-            {
-                CompanyID = 1,
-                CompanyName = "SportRehab",
-
-            });
-
-            modelBuilder.Entity<ChangeHistory>().HasData(new ChangeHistory
-            {
-                ChangeID = 1,
-                ChangeType = "Ombokning",
-                OldAppointmentTime = new DateTime(2024, 12, 14, 10, 30, 00),
-                NewAppointmentTime = new DateTime(2024, 12, 15, 10, 30, 00),
-                WhenChanged = new DateTime(2024, 12, 14, 10, 30, 00)
-            });
-
-
+            modelBuilder.Entity<Appointment>()
+                .HasOne(a => a.Company)
+                .WithMany(c => c.Appointments)
+                .HasForeignKey(a => a.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

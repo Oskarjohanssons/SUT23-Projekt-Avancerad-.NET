@@ -1,6 +1,10 @@
 ﻿using ClassLibary;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SUT23_Projekt___Avancerad_.NET.Dto;
+using SUT23_Projekt___Avancerad_.NET.Dto.Requests;
+using SUT23_Projekt___Avancerad_.NET.Dto.Responses;
 using SUT23_Projekt___Avancerad_.NET.Services;
 
 namespace SUT23_Projekt___Avancerad_.NET.Controllers
@@ -9,240 +13,116 @@ namespace SUT23_Projekt___Avancerad_.NET.Controllers
     [ApiController]
     public class CompanyController : ControllerBase
     {
-        private ICompany<Company> _company;
-        public CompanyController(ICompany<Company> company)
+        private readonly ICompanyRepository _companyRepository;
+        private readonly ICompanyAppointmentRepository _appointmentRepository;
+
+        public CompanyController(ICompanyRepository companyRepository, ICompanyAppointmentRepository appointmentRepository)
         {
-            _company = company;
+            _companyRepository = companyRepository;
+            _appointmentRepository = appointmentRepository;
         }
 
-        [HttpGet("Get all Customers")]
-        public async Task<ActionResult<Customer>> GetAllCustomer()
-        {
-            try
-            {
-                return Ok(await _company.GetAllCustomers());
 
-            }
-            catch
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
-            }
-        }
-
-        [HttpGet("Get Customer by ID{CustomerID:int}")]
-        public async Task<ActionResult<Customer>> GetCustomerByID(int id)
+        [HttpGet("AllCompanies")]
+        public async Task<IActionResult> GetCompanies()
         {
             try
             {
-                var result = await _company.GetSingleCustomer(id);
-                if (result == null)
-                {
-                    return NotFound();
-                }
-                return Ok(result);
+                return Ok(await _companyRepository.GetAllCompanies());
             }
-            catch
+            catch (Exception)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving data from the database");
             }
         }
 
-        [HttpDelete("Delete Customer")]
-        public async Task<ActionResult<Customer>> RemoveCustomer(int id)
+
+        [HttpPost("CreateCompany")]
+
+        [ProducesResponseType(200, Type = typeof(CreateCompanyResponse))]
+        public async Task<IActionResult> CreateCompany(CreateCompany request)
         {
             try
             {
-                var result = await _company.DeleteCustomer(id);
-                if (result == null)
-                {
-                    return NotFound();
-                }
-                return Ok(result);
+                return Ok(await _companyRepository.AddCompany(request));
             }
-            catch
+            catch (Exception)
             {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error creating data to the database");
 
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to remove data from Database.......");
             }
         }
 
-        [HttpPost("Add Customer")]
-        public async Task<ActionResult<Customer>> AddCustomer(Customer customer)
-        {
-            try
-            {
-                if (customer == null)
-                {
-                    return BadRequest();
-                }
-                var newCustomer = await _company.AddCustomer(customer);
-                return CreatedAtAction(nameof(AddCustomer), new { id = newCustomer.CustomerID }, newCustomer);
-            }
-            catch
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to Post data To Database.......");
-            }
-        }
-
-        [HttpPut("Update Customer/{id:int}")] //funkar behöver CustomerID
-        public async Task<ActionResult<Customer>> UpdateCustomer(int id, Customer customer)
-        {
-            try
-            {
-                if (id != customer.CustomerID)
-                {
-                    return BadRequest("No Customer with that ID exists...");
-                }
-
-                var customerToUpdate = await _company.GetSingleCustomer(id);
-                if (customerToUpdate == null)
-                {
-                    return NotFound($"Customer with ID {id} could not be found..");
-                }
-                return await _company.UpdateCustomer(customer);
-            }
-            catch
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to Post data To Database.......");
-            }
-        }
-
-        [HttpPost("Add Appointment")]
-        public async Task<ActionResult<Appointment>> AddAppointment(Appointment appointment)
+        [HttpPost("AddAppointment")]
+        [Authorize(Policy = "CompanyPolicy")]
+        public async Task<IActionResult> AddAppointment([FromBody] AppointmentDto appointment)
         {
             try
             {
                 if (appointment == null)
                 {
-                    return BadRequest();
+                    return BadRequest("Invalid input to the appointment");
                 }
-                var newAppointment = await _company.AddAppointment(appointment);
-                await _company.LogAppointmentChange("Added Appointment by Company", null, null, newAppointment);
-                return CreatedAtAction(nameof(AddAppointment), new { id = newAppointment.AppointmentID }, newAppointment);
-
-            }
-            catch
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to Post data To Database.......");
-            }
-        }
-
-        [HttpPut("Uppdate Appointment{id:int}")]
-        public async Task<ActionResult<Appointment>> UppdateAppointment(int id, Appointment appointment)
-        {
-            try
-            {
-                if (id != appointment.AppointmentID)
-                {
-                    return BadRequest("Appointment ID doesn't match..");
-                }
-
-                var appointmentToUpdate = await _company.GetAppointmentByID(id);
-                if (appointmentToUpdate == null)
-                {
-                    return NotFound($"Appointment with ID={id} not found..");
-                }
-
-                var oldAppointmentTime = appointmentToUpdate.AppointmentStart;
-                appointmentToUpdate.AppointmentName = appointment.AppointmentName;
-                appointmentToUpdate.AppointmentLength = appointment.AppointmentLength;
-                appointmentToUpdate.AppointmentStart = appointment.AppointmentStart;
-                appointmentToUpdate.AppointmentEnd = appointment.AppointmentEnd;
-                appointmentToUpdate.AppointmentID = appointment.AppointmentID;
-
-                var updatedAppointment = await _company.UpdateAppointment(appointmentToUpdate);
-
-                if (updatedAppointment == null)
-                {
-                    return NotFound($"Appointment with ID={id} not found..");
-                }
-
-                await _company.LogAppointmentChange("Updated Appointment by Company", oldAppointmentTime, appointment.AppointmentStart, appointment);
-
-                return updatedAppointment;
-            }
-            catch
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error updating appointment.");
-            }
-        }
-
-        [HttpDelete("Delete Appointment{id:int}")]
-        public async Task<ActionResult<Appointment>> DeleteAppointment(int id)
-        {
-            try
-            {
-                var result = await _company.DeleteAppointment(id);
-                if (result == null)
-                {
-                    return NotFound();
-                }
-                await _company.LogAppointmentChange("Removed Appointment by Company", null, null, result);
-                return Ok(result);
+                var addedAppointment = await _appointmentRepository.AddCompanyAppointment(appointment);
+                return CreatedAtAction(nameof(AddAppointment), new { id = addedAppointment.AppointId }, addedAppointment);
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to remove data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error creating data to the database");
             }
         }
-
-        [HttpGet("Get Appointments this week")]
-        public async Task<ActionResult<List<Appointment>>> GetAppointmentsThisWeek()
+        [HttpPut("UpdateAppointment/{appointId:int}")]
+        [Authorize(Policy = "CompanyPolicy")]
+        public async Task<IActionResult> UpdateAppointment(int appointId, [FromBody] AppointmentDto appointment)
         {
             try
             {
-                var currentDate = DateTime.Now;
-                var appointmentsThisWeek = await _company.AppointmentsThisWeekAll(currentDate);
-                return Ok(appointmentsThisWeek);
+                var updatedAppointment = await _appointmentRepository.UpdateCompanyAppointment(appointment);
+                if (updatedAppointment == null)
+                {
+                    return NotFound("Appointment not found");
+                }
+                return Ok(updatedAppointment);
             }
-            catch
+            catch (Exception)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error update data from the database");
             }
         }
-
-        [HttpGet("Get Customer Appointments this week{id:int}")]
-        public async Task<ActionResult<List<Appointment>>> GetAppointmentByCustomer(int id)
+        [HttpDelete("DeleteAppointment/{appointId:int}")]
+        [Authorize(Policy = "CompanyPolicy")]
+        public async Task<IActionResult> DeleteAppointment(int appointId)
         {
             try
             {
-                var currentDate = DateTime.Now;
-                var appointmentsForCustomer = await _company.AppointmentsThisWeekCustomer(currentDate, id);
-                return Ok(appointmentsForCustomer);
+                var deletedAppointment = await _appointmentRepository.DeleteCompanyAppointment(appointId);
+                if (deletedAppointment == null)
+                {
+                    return NotFound("Appointment to delete was not found");
+                }
+                return Ok(deletedAppointment);
             }
-            catch
+            catch (Exception)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error deleting data from the database");
             }
         }
-
-        [HttpGet("Change History")]
-        public async Task<ActionResult<IEnumerable<ChangeHistory>>> GetChangeHistory()
+        [HttpGet("GetAppointmentsByDateRange")]
+        [Authorize(Policy = "CompanyPolicy")]
+        public async Task<IActionResult> GetAppointmentsByDateRange(DateTime startDate, DateTime endDate, int companyId)
         {
             try
             {
-                var changeHistory = await _company.GetChangeHistory();
-                return Ok(changeHistory);
+                var appointments = await _companyRepository.GetAppointmentsByDateRange(startDate, endDate, companyId);
+                if (appointments == null || appointments.Count == 0)
+                {
+                    return NotFound("No appointments found for the given date range and company.");
+                }
+                return Ok(appointments);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving change history: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database");
             }
         }
     }

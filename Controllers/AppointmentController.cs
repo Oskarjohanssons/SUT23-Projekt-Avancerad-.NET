@@ -1,4 +1,5 @@
 ﻿using ClassLibary;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SUT23_Projekt___Avancerad_.NET.Services;
@@ -9,45 +10,42 @@ namespace SUT23_Projekt___Avancerad_.NET.Controllers
     [ApiController]
     public class AppointmentController : ControllerBase
     {
-        private IAppData<Appointment> _appointment;
-        public AppointmentController(IAppData<Appointment> appointment)
-        {
-            _appointment = appointment;
-        }
+        private readonly IAppointmentRepository _appointmentRepository;
 
-        [HttpGet("Get All Appointments")]
-        public async Task<ActionResult<Appointment>> GetAllAppointments()
+        public AppointmentController(IAppointmentRepository appointmentRepository)
+        {
+            _appointmentRepository = appointmentRepository;
+        }
+        [HttpGet("AllAppointments")]
+        [Authorize(Policy = "CustomerOrCompanyPolicy")]
+        public async Task<IActionResult> GetAppointments()
         {
             try
             {
-                return Ok(await _appointment.GetAll());
+                return Ok(await _appointmentRepository.GetAllAppointments());
             }
             catch (Exception)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving data from the database");
             }
-
         }
 
-        [HttpGet("Get Appointment by ID{id:int}")]
-        public async Task<ActionResult<Appointment>> GetAppointmentByID(int id)
+        [HttpGet("GetSortedAppointments")]
+        [Authorize(Policy = "CustomerOrCompanyPolicy")]
+        public async Task<IActionResult> GetAppointments(DateTime? startDate, DateTime? endDate, int? companyId, string sortField, bool ascending = true)
         {
             try
             {
-                var result = await _appointment.GetSingle(id);
-                if (result == null)
+                var appointments = await _appointmentRepository.GetAppointments(startDate, endDate, companyId, sortField, ascending);
+                if (appointments == null || appointments.Count() == 0)
                 {
-                    return BadRequest();
+                    return NotFound("No appointments found for the given criteria.");
                 }
-                return Ok(result);
+                return Ok(appointments);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error to get data from Database.......");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data from the database: {ex.Message}");
             }
         }
     }
