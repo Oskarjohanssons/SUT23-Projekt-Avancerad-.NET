@@ -64,7 +64,6 @@ namespace SUT23_Projekt___Avancerad_.NET
             builder.Services.AddScoped<ICustomerAppointmentRepository, CustomerRepository>();
             builder.Services.AddScoped<IChangeLogRepository, ChangeLogRepository>();
             builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
-            builder.Services.AddSwaggerGen();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {

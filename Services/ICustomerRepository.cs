@@ -11,7 +11,6 @@ namespace SUT23_Projekt___Avancerad_.NET.Services
         Task<CustomerDto> GetCustomerById(int customerId);
         Task<CreateCustomerResponse> AddCustomer(CreateCustomer customer);
         Task UpdateCustomer(CustomerDto updatedCustomer);
-
         Task DeleteCustomer(int customerId);
         Task<double> GetTotalBookingHoursForWeek(int customerId, int year, int weekNumber);
     }
